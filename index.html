@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>有的沒的小舖 - 手作烘焙 · 二手好物 · 寄賣平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+        }
+        .product-card {
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+        }
+        .product-image {
+            transition: transform 0.3s ease;
+        }
+        .product-card:hover .product-image {
+            transform: scale(1.05);
+        }
+        .modal {
+            display: none;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .cart-sidebar {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        .cart-sidebar.active {
+            transform: translateX(0);
+        }
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-amber-100 to-orange-100 shadow-lg sticky top-0 z-40 border-b-4 border-orange-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl sm:text-4xl font-bold text-amber-900">
+                        有的沒的小舖
+                    </h1>
+                    <p class="text-sm text-amber-700 mt-1">手作烘焙 · 二手好物 · 寄賣平台</p>
+                </div>
+                
+                <!-- Social Links -->
+                <div class="flex items-center gap-3">
+                    <a href="https://www.facebook.com/profile.php?id=61582819418580" target="_blank" 
+                       class="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-md" 
+                       title="Facebook 粉絲專頁">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                    </a>
+                    <button onclick="toggleCart()" class="relative p-3 bg-orange-600 text-white rounded-full hover:bg-orange-700 transition-all shadow-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center hidden">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="mt-4 flex flex-wrap gap-2" id="categories"></div>
+
+            <!-- Search Bar -->
+            <div class="mt-4 relative">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input
+                    type="text"
+                    id="search"
+                    placeholder="搜尋產品..."
+                    class="w-full pl-10 pr-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white"
+                    oninput="filterProducts()"
+                >
+            </div>
+        </div>
+    </header>
+
+    <!-- Banner -->
+    <div class="bg-gradient-to-r from-orange-400 to-amber-500 text-white py-8 text-center shadow-lg">
+        <h2 class="text-2xl sm:text-3xl font-bold mb-2">✨ 純天然手工製作 · 寄賣平台 ✨</h2>
+        <p class="text-lg">🎂 手作烘焙 | 📚 二手書籍 | 🛍️ 雜項好物 | 🤝 免費寄賣 · 營業會員制</p>
+    </div>
+
+    <!-- Products Grid -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        
+        <!-- Empty State -->
+        <div id="empty-state" class="text-center py-20 hidden">
+            <p class="text-amber-700 text-xl">找不到符合的商品 😢</p>
+        </div>
+    </main>
+
+    <!-- Consignment Info -->
+    <div class="bg-gradient-to-r from-amber-100 to-orange-100 py-12 mt-8 border-t-4 border-orange-300">
+        <div class="max-w-6xl mx-auto px-4">
+            <h3 class="text-3xl font-bold text-amber-900 mb-6 text-center">🤝 寄賣服務說明</h3>
+            
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- 個人寄賣 -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg border-2 border-green-300">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-4xl">👤</span>
+                        <div>
+                            <h4 class="text-2xl font-bold text-green-700">個人寄賣</h4>
+                            <p class="text-green-600 font-semibold">完全免費</p>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 text-amber-900">
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-600 font-bold">✓</span>
+                            <span>朋友、個人閒置物品寄賣</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-600 font-bold">✓</span>
+                            <span>無刊登費用</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-600 font-bold">✓</span>
+                            <span>無刊登期限</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-600 font-bold">✓</span>
+                            <span>買家可直接聯絡您</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 營業會員 -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-300">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-4xl">🏪</span>
+                        <div>
+                            <h4 class="text-2xl font-bold text-purple-700">營業會員</h4>
+                            <p class="text-purple-600 font-semibold">NT$ 300/月</p>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 text-amber-900">
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">✓</span>
+                            <span>商業販售、批量商品</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">✓</span>
+                            <span>每月 NT$ 300 會員費</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">✓</span>
+                            <span>每月可刊登 20 件商品</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">✓</span>
+                            <span>商品顯示「營業賣家」標章</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">✓</span>
+                            <span>買家可直接聯絡您</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <a href="https://www.facebook.com/profile.php?id=61582819418580" target="_blank" 
+                   class="inline-block px-8 py-3 bg-orange-600 text-white rounded-full font-bold hover:bg-orange-700 transition-all shadow-lg mr-4 mb-4">
+                    💬 個人寄賣諮詢
+                </a>
+                <a href="https://www.facebook.com/profile.php?id=61582819418580" target="_blank" 
+                   class="inline-block px-8 py-3 bg-purple-600 text-white rounded-full font-bold hover:bg-purple-700 transition-all shadow-lg mb-4">
+                    🏪 申請營業會員
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-amber-900 text-amber-100 py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h3 class="text-2xl font-bold mb-4">有的沒的小舖</h3>
+            <div class="flex justify-center gap-4 mb-4">
+                <a href="https://www.facebook.com/profile.php?id=61582819418580" target="_blank" 
+                   class="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-all">
+                    Facebook 粉絲專頁
+                </a>
+            </div>
+            <p class="text-sm opacity-80">© 2025 有的沒的小舖 版權所有</p>
+        </div>
+    </footer>
+
+    <!-- Product Detail Modal -->
+    <div id="product-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-amber-50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-4 border-orange-300">
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Shopping Cart Sidebar -->
+    <div id="cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" onclick="toggleCart()"></div>
+    <div id="cart-sidebar" class="cart-sidebar fixed right-0 top-0 h-full w-full max-w-md bg-gradient-to-b from-amber-50 to-orange-50 shadow-2xl z-50 flex flex-col border-l-4 border-orange-300">
+        <div class="p-6 border-b flex items-center justify-between bg-gradient-to-r from-orange-600 to-amber-600 text-white">
+            <h2 class="text-2xl font-bold">🛒 購物車</h2>
+            <button onclick="toggleCart()" class="p-2 hover:bg-orange-700 rounded-lg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div id="cart-items" class="flex-1 overflow-y-auto p-6"></div>
+
+        <div id="cart-footer" class="p-6 border-t bg-amber-100"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 📝 商品資料修改教學
+        // ==========================================
+        // 
+        // 商品類型說明：
+        // - type: 'shop' = 小舖自營商品（顯示「小舖商品」標章）
+        // - type: 'consign' = 個人寄賣（顯示「個人寄賣」標章）
+        // - type: 'business' = 營業會員（顯示「營業賣家」標章）
+        // 
+        // seller 賣家資訊：
+        // - name: 賣家名稱
+        // - contact: 聯絡方式（Facebook、LINE、電話等）
+        // - fbLink: Facebook 連結（選填）
+        // 
+        // ==========================================
+
+        const products = [
+            // 小舖自營商品
+            { 
+                id: 1, 
+                type: 'shop',  // 小舖商品
+                name: '藍莓吐司',
+                price: 220,
+                category: '手作烘焙',
+                image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600',
+                desc: '沒有漂亮的外表，但絕對真材實料',
+                features: ['純天然手工製作', '加牛奶優酪乳無糖奶油', '質感軟綿', '少許精釀調味'],
+                seller: {
+                    name: '有的沒的小舖',
+                    contact: 'Facebook 粉絲專頁',
+                    fbLink: 'https://www.facebook.com/profile.php?id=61582819418580'
+                }
+            },
+            
+            // 個人寄賣商品
+            { 
+                id: 2, 
+                type: 'consign',  // 個人寄賣
+                name: '二手文學小說',
+                price: 80,
+                category: '二手書籍',
+                image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600',
+                desc: '九成新，愛書人的好選擇',
+                seller: {
+                    name: '小明',
+                    contact: 'LINE ID: xiaoming123',
+                    fbLink: ''  // 可選填
+                }
+            },
+            
+            // 營業會員商品
+            { 
+                id: 3, 
+                type: 'business',  // 營業會員
+                name: '手作餅乾禮盒',
+                price: 320,
+                category: '手作烘焙',
+                image: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=600',
+                desc: '多種口味，送禮自用兩相宜',
+                features: ['新鮮現做', '多種口味', '精美包裝', '可客製化'],
+                seller: {
+                    name: '甜蜜烘焙坊',
+                    contact: '電話: 0912-345-678',
+                    fbLink: 'https://www.facebook.com/sweetbakery'
+                }
+            },
+
+            { 
+                id: 4, 
+                type: 'shop',
+                name: '南瓜蛋糕',
+                price: 280,
+                category: '手作烘焙',
+                image: 'https://images.unsplash.com/photo-1587241321921-91a834d82ffc?w=600',
+                desc: '沒有漂亮的外表，但絕對真材實料',
+                features: ['純天然手工製作', '只使用南瓜不加水', '香氣濃郁', '少許糖調味'],
+                seller: {
+                    name: '有的沒的小舖',
+                    contact: 'Facebook 粉絲專頁',
+                    fbLink: 'https://www.facebook.com/profile.php?id=61582819418580'
+                }
+            },
+
+            { 
+                id: 5, 
+                type: 'consign',
+                name: '復古馬克杯',
+                price: 150,
+                category: '雜項好物',
+                image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=600',
+                desc: '懷舊風格，獨特收藏',
+                seller: {
+                    name: '小華',
+                    contact: 'Facebook: 小華的雜貨鋪',
+                    fbLink: ''
+                }
+            },
+
+            { 
+                id: 6, 
+                type: 'consign',
+                name: '二手兒童繪本',
+                price: 60,
+                category: '二手書籍',
+                image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600',
+                desc: '狀況良好，適合親子共讀',
+                seller: {
+                    name: '媽咪二手書屋',
+                    contact: 'LINE ID: mommybooks',
+                    fbLink: ''
+                }
+            },
+
+            // ==========================================
+            // 💡 新增商品範例
+            // ==========================================
+            // { 
+            //     id: 7,
+            //     type: 'consign',  // 選擇: 'shop' 或 'consign' 或 'business'
+            //     name: '商品名稱',
+            //     price: 100,
+            //     category: '手作烘焙',
+            //     image: '圖片網址',
+            //     desc: '商品描述',
+            //     features: ['特色1', '特色2'],  // 可選
+            //     seller: {
+            //         name: '賣家名稱',
+            //         contact: '聯絡方式',
+            //         fbLink: 'Facebook連結'  // 可選
+            //     }
+            // },
+        ];
+
+        let cart = [];
+        let selectedCategory = '全部';
+
+        function init() {
+            renderCategories();
+            renderProducts();
+        }
+
+        function renderCategories() {
+            const categories = ['全部', '手作烘焙', '二手書籍', '雜項好物'];
+            const container = document.getElementById('categories');
+            container.innerHTML = categories.map(cat => `
+                <button 
+                    onclick="selectCategory('${cat}')"
+                    class="px-5 py-2.5 rounded-full transition-all font-semibold ${
+                        selectedCategory === cat 
+                        ? 'bg-orange-600 text-white shadow-lg scale-105' 
+                        : 'bg-white text-amber-800 hover:bg-orange-100 border-2 border-orange-200'
+                    }"
+                >
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function selectCategory(category) {
+            selectedCategory = category;
+            renderCategories();
+            renderProducts();
+        }
+
+        function filterProducts() {
+            renderProducts();
+        }
+
+        function getSellerBadge(type) {
+            const badges = {
+                'shop': '<span class="px-2 py-1 bg-orange-500 text-white rounded-full text-xs font-bold">小舖商品</span>',
+                'consign': '<span class="px-2 py-1 bg-green-500 text-white rounded-full text-xs font-bold">個人寄賣</span>',
+                'business': '<span class="px-2 py-1 bg-purple-500 text-white rounded-full text-xs font-bold">營業賣家</span>'
+            };
+            return badges[type] || '';
+        }
+
+        function renderProducts() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const filtered = products.filter(p => {
+                const matchCategory = selectedCategory === '全部' || p.category === selectedCategory;
+                const matchSearch = p.name.toLowerCase().includes(searchTerm) || p.desc.toLowerCase().includes(searchTerm);
+                return matchCategory && matchSearch;
+            });
+
+            const grid = document.getElementById('products-grid');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                grid.innerHTML = filtered.map((product, index) => `
+                    <div class="product-card bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-orange-200 fade-in" style="animation-delay: ${index * 0.1}s">
+                        <div class="relative overflow-hidden h-64 bg-amber-100">
+                            <div class="badge">
+                                ${getSellerBadge(product.type)}
+                            </div>
+                            <img src="${product.image}" alt="${product.name}" class="product-image w-full h-full object-cover">
+                            <span class="absolute top-3 right-3 px-3 py-1 bg-orange-600 text-white rounded-full text-sm font-bold shadow-lg">
+                                ${product.category}
+                            </span>
+                        </div>
+                        <div class="p-5">
+                            <h3 class="text-xl font-bold text-amber-900 mb-2">${product.name}</h3>
+                            <p class="text-amber-700 text-sm mb-2 italic">"${product.desc}"</p>
+                            <p class="text-xs text-gray-600 mb-3">
+                                <span class="font-semibold">賣家：</span>${product.seller.name}
+                            </p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl font-bold text-orange-600">NT$ ${product.price}</span>
+                                <div class="flex gap-2">
+                                    <button onclick="showProductDetail(${product.id})" class="px-4 py-2 bg-amber-200 text-amber-800 rounded-lg hover:bg-amber-300 transition-colors font-semibold">
+                                        詳情
+                                    </button>
+                                    <button onclick="addToCart(${product.id})" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-md font-semibold">
+                                        加入購物車
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function showProductDetail(id) {
+            const product = products.find(p => p.id === id);
+            const modal = document.getElementById('product-modal');
+            const content = document.getElementById('modal-content');
+            
+            content.innerHTML = `
+                <div class="relative">
+                    <button onclick="closeModal()" class="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-amber-100 z-10 border-2 border-orange-300">
+                        <svg class="w-6 h-6 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                    <div class="absolute top-4 left-4 z-10">
+                        ${getSellerBadge(product.type)}
+                    </div>
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-96 object-cover">
+                </div>
+                <div class="p-6">
+                    <span class="inline-block px-4 py-1.5 bg-orange-200 text-orange-800 rounded-full text-sm font-bold mb-3">
+                        ${product.category}
+                    </span>
+                    <h2 class="text-3xl font-bold text-amber-900 mb-2">${product.name}</h2>
+                    <p class="text-amber-700 text-lg italic mb-4">"${product.desc}"</p>
+                    
+                    ${product.features ? `
+                        <div class="mb-4 bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
+                            <h3 class="font-bold text-amber-900 mb-2">✨ 產品特色</h3>
+                            ${product.features.map(f => `
+                                <div class="flex items-start gap-2 mb-1">
+                                    <span class="text-orange-600">✓</span>
+                                    <span class="text-amber-800">${f}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+
+                    <div class="mb-4 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                        <h3 class="font-bold text-blue-900 mb-2">👤 賣家資訊</h3>
+                        <p class="text-blue-800 mb-1"><span class="font-semibold">賣家：</span>${product.seller.name}</p>
+                        <p class="text-blue-800"><span class="font-semibold">聯絡方式：</span>${product.seller.contact}</p>
+                        ${product.seller.fbLink ? `
+                            <a href="${product.seller.fbLink}" target="_blank" 
+                               class="inline-block mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                📱 聯絡賣家
+                            </a>
+                        ` : ''}
+                    </div>
+
+                    <div class="flex items-center justify-between border-t-2 border-orange-200 pt-4">
+                        <span class="text-3xl font-bold text-orange-600">NT$ ${product.price}</span>
+                        <button onclick="addToCart(${product.id}); closeModal();" class="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-lg font-bold">
+                            加入購物車
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('product-modal').classList.remove('active');
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            const existing = cart.find(item => item.id === id);
+            
+            if (existing) {
+                existing.quantity++;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+            
+            updateCart();
+            
+            // Show success message
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '已加入！';
+            btn.classList.add('bg-green-600');
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('bg-green-600');
+            }, 1000);
+        }
+
+        function updateQuantity(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    cart = cart.filter(i => i.id !== id);
+                }
+            }
+            updateCart();
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCart();
+        }
+
+        function updateCart() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            
+            const countEl = document.getElementById('cart-count');
+            if (totalItems > 0) {
+                countEl.textContent = totalItems;
+                countEl.classList.remove('hidden');
+            } else {
+                countEl.classList.add('hidden');
+            }
+
+            const itemsContainer = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                itemsContainer.innerHTML = `
+                    <div class="text-center text-amber-700 mt-20">
+                        <svg class="w-20 h-20 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <p class="text-lg font-semibold">購物車是空的</p>
+                        <p class="text-sm mt-2">快去挑選您喜歡的商品吧！</p>
+                    </div>
+                `;
+            } else {
+                itemsContainer.innerHTML = cart.map(item => `
+                    <div class="bg-white rounded-xl p-4 mb-4 shadow-md border-2 border-orange-200">
+                        <div class="flex gap-4 mb-3">
+                            <img src="${item.image}" alt="${item.name}" class="w-20 h-20 object-cover rounded-lg">
+                            <div class="flex-1">
+                                <div class="mb-1">${getSellerBadge(item.type)}</div>
+                                <h3 class="font-bold text-amber-900">${item.name}</h3>
+                                <p class="text-xs text-gray-600">賣家：${item.seller.name}</p>
+                                <p class="text-orange-600 font-bold text-lg">NT$ ${item.price}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between border-t pt-3">
+                            <div class="flex items-center gap-3">
+                                <button onclick="updateQuantity(${item.id}, -1)" class="p-1.5 bg-orange-200 rounded-lg hover:bg-orange-300 transition-colors">
+                                    <svg class="w-4 h-4 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                                    </svg>
+                                </button>
+                                <span class="font-bold text-amber-900 text-lg">${item.quantity}</span>
+                                <button onclick="updateQuantity(${item.id}, 1)" class="p-1.5 bg-orange-200 rounded-lg hover:bg-orange-300 transition-colors">
+                                    <svg class="w-4 h-4 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <button onclick="removeFromCart(${item.id})" class="text-red-600 hover:text-red-800 text-sm font-semibold">
+                                移除
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const footer = document.getElementById('cart-footer');
+            if (cart.length > 0) {
+                // Group items by seller
+                const groupedBySeller = {};
+                cart.forEach(item => {
+                    const sellerName = item.seller.name;
+                    if (!groupedBySeller[sellerName]) {
+                        groupedBySeller[sellerName] = {
+                            seller: item.seller,
+                            items: [],
+                            total: 0
+                        };
+                    }
+                    groupedBySeller[sellerName].items.push(item);
+                    groupedBySeller[sellerName].total += item.price * item.quantity;
+                });
+
+                const sellersList = Object.values(groupedBySeller).map((group, index) => {
+                    const itemsList = group.items.map(item => `${item.name} x${item.quantity} (NT$ ${item.price * item.quantity})`).join('\n');
+                    const orderText = `【訂單資訊】\n賣家：${group.seller.name}\n\n商品清單：\n${itemsList}\n\n小計：NT$ ${group.total}\n\n聯絡方式：${group.seller.contact}`;
+                    
+                    const contactLink = group.seller.fbLink 
+                        ? `<a href="${group.seller.fbLink}" target="_blank" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm">📱 Facebook 聯絡</a>`
+                        : '';
+                    
+                    return `
+                        <div class="bg-blue-50 p-4 rounded-lg mb-3 border-2 border-blue-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="font-bold text-amber-900">👤 ${group.seller.name}</p>
+                                <span class="text-orange-600 font-bold">NT$ ${group.total}</span>
+                            </div>
+                            <div class="text-sm text-gray-700 mb-2 space-y-1">
+                                ${group.items.map(item => `
+                                    <div class="flex justify-between">
+                                        <span>${item.name} x${item.quantity}</span>
+                                        <span class="text-orange-600">NT$ ${item.price * item.quantity}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="text-xs text-gray-600 mb-3">
+                                <p>📞 ${group.seller.contact}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick='copyOrderText(${JSON.stringify(orderText)})' 
+                                        class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-semibold">
+                                    📋 複製訂單
+                                </button>
+                                ${contactLink}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Generate full order summary
+                const fullOrderText = `【有的沒的小舖 - 訂單總覽】\n訂單時間：${new Date().toLocaleString('zh-TW')}\n\n` + 
+                    Object.values(groupedBySeller).map(group => {
+                        const items = group.items.map(item => `  ・${item.name} x${item.quantity} - NT$ ${item.price * item.quantity}`).join('\n');
+                        return `【賣家：${group.seller.name}】\n${items}\n小計：NT$ ${group.total}\n聯絡：${group.seller.contact}`;
+                    }).join('\n\n') + 
+                    `\n\n━━━━━━━━━━━━━━━━\n訂單總金額：NT$ ${totalAmount}`;
+
+                footer.innerHTML = `
+                    <div class="border-b-2 pb-4 mb-4">
+                        <div class="flex justify-between text-xl font-bold text-amber-900 mb-2">
+                            <span>訂單總金額：</span>
+                            <span class="text-orange-600 text-2xl">NT$ ${totalAmount}</span>
+                        </div>
+                        <button onclick='copyOrderText(${JSON.stringify(fullOrderText)})' 
+                                class="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg hover:from-green-700 hover:to-green-600 transition-all font-bold shadow-lg flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            一鍵複製完整訂單
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-bold text-amber-900 mb-3 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/>
+                            </svg>
+                            分別聯絡各賣家
+                        </h3>
+                        ${sellersList}
+                    </div>
+
+                    <div class="mt-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg p-3">
+                        <p class="text-xs text-amber-800 font-semibold mb-2">💡 下單流程：</p>
+                        <ol class="text-xs text-amber-700 space-y-1 ml-4">
+                            <li>1. 點擊「複製訂單」複製商品清單</li>
+                            <li>2. 透過 Facebook 或聯絡方式傳給賣家</li>
+                            <li>3. 與賣家確認付款方式與交貨細節</li>
+                            <li>4. 完成付款後等待出貨</li>
+                        </ol>
+                    </div>
+                `;
+            } else {
+                footer.innerHTML = '';
+            }
+        }
+
+        function toggleCart() {
+            const sidebar = document.getElementById('cart-sidebar');
+            const overlay = document.getElementById('cart-overlay');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('hidden');
+        }
+
+        init();
+    </script>
+</body>
+</html>
